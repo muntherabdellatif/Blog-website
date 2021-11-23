@@ -1,6 +1,6 @@
 //jshint esversion:6
-
 const express = require("express");
+const mongoose =require("mongoose");
 const bodyParser = require("body-parser");
 const ejs = require("ejs");
 let cors =require("cors");
@@ -8,7 +8,13 @@ let path =require("path");
 let expressLayouts =require("express-ejs-layouts");
 const _ =require("lodash");
 const { lowerCase } = require("lodash");
+mongoose.connect("mongodb://localhost:27017/BlogSiteDB",{useNewUrlParser:true});
 
+const BlogSchema = new mongoose.Schema({
+  blogTitle : String ,
+  blogContent :String
+});
+const Blog =mongoose.model("Blog",BlogSchema);
 
 const homeStartingContent = "Lacus vel facilisis volutpat est velit egestas dui id ornare. Semper auctor neque vitae tempus quam. Sit amet cursus sit amet dictum sit amet justo. Viverra tellus in hac habitasse. Imperdiet proin fermentum leo vel orci porta. Donec ultrices tincidunt arcu non sodales neque sodales ut. Mattis molestie a iaculis at erat pellentesque adipiscing. Magnis dis parturient montes nascetur ridiculus mus mauris vitae ultricies. Adipiscing elit ut aliquam purus sit amet luctus venenatis lectus. Ultrices vitae auctor eu augue ut lectus arcu bibendum at. Odio euismod lacinia at quis risus sed vulputate odio ut. Cursus mattis molestie a iaculis at erat pellentesque adipiscing.";
 const aboutContent = "Hac habitasse platea dictumst vestibulum rhoncus est pellentesque. Dictumst vestibulum rhoncus est pellentesque elit ullamcorper. Non diam phasellus vestibulum lorem sed. Platea dictumst quisque sagittis purus sit. Egestas sed sed risus pretium quam vulputate dignissim suspendisse. Mauris in aliquam sem fringilla. Semper risus in hendrerit gravida rutrum quisque non tellus orci. Amet massa vitae tortor condimentum lacinia quis vel eros. Enim ut tellus elementum sagittis vitae. Mauris ultrices eros in cursus turpis massa tincidunt dui.";
@@ -26,6 +32,25 @@ app.use(bodyParser.urlencoded({extended:true}));
 app.use(cors());
 app.use(expressLayouts);
 app.use(express.static(path.join(__dirname, 'public')));
+
+//find blogs in data base and push it in pages array 
+Blog.find(function (error,blog) {
+  if (error){
+      console.log(error);
+  }else {
+      if (blog){
+        blog.forEach((b)=>{
+          console.log(b.blogTitle);
+          console.log(b.blogContent);
+          const newBlog = {
+            title : b.blogTitle ,
+            content : b.blogContent 
+          }
+          postArray.push(newBlog);
+        })
+      }
+  }
+});
 
 app.get("/",function (req,res) {
   res.render("index",{
@@ -60,11 +85,18 @@ app.get(`/post/:postID`,function (req,res) {
  }
 })
 app.post("/compose",function(req,res){
+  // adding data to array
   let post={
     title : req.body.Title ,
     content : req.body.post
   };
   postArray.push(post);
+  // adding data to data base
+  const newBlog = new Blog ({
+    blogTitle : req.body.Title ,
+    blogContent :req.body.post
+  }) ;
+  newBlog.save();
   res.redirect("/"); 
 });
 app.post("/post",function(req,res){
